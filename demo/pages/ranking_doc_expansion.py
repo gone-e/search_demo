@@ -192,7 +192,7 @@ def page():
         tobe1_docs = get_docs(tobe1_res)
 
         # 검색쿼리문
-        col1, mid, col2 = st.columns([1, 0.2, 1])
+        col1, mid, col2 = st.columns([1, 1, 1])
         with col1:
             with st.expander("Request Body"):
                 st.json(asis_res["requestBody"])
@@ -210,7 +210,7 @@ def page():
         tobe1_id2rank = get_id2rank(tobe1_docs)
 
         if option_debug == "Debug":
-            debug_cols = st.columns(2)
+            debug_cols = st.columns(3)
             # extra_cols[0].info(f"elapsed: {asis_elapsed}")
             # extra_cols[1].info(f"elapsed: {tobe_elapsed}")
             score_list = [doc["_score"] for doc in asis_docs]
@@ -223,6 +223,16 @@ def page():
             debug_cols[0].pyplot(plot)
             # debug_cols[0].write(f'검색결과수: {asis_res["result"]["hits"]["total"]["value"]}')
 
+            score_list = [doc["_score"] for doc in tobe1_docs]
+            plot = visualize.draw_distribution(
+                score_list,
+                x="Rank",
+                y="Score",
+                title="TOBE Score Distribution"
+            )
+            debug_cols[1].pyplot(plot)
+            # debug_cols[1].write(f'검색결과수: {tobe_res["result"]["hits"]["total"]["value"]}')
+
             score_list = [doc["_score"] for doc in tobe_docs]
             plot = visualize.draw_distribution(
                 score_list, 
@@ -230,17 +240,24 @@ def page():
                 y="Score", 
                 title="TOBE Score Distribution"
             )
-            debug_cols[1].pyplot(plot)
+            debug_cols[2].pyplot(plot)
             # debug_cols[1].write(f'검색결과수: {tobe_res["result"]["hits"]["total"]["value"]}')
 
-        num_cols = 5    # 홀수로 변경: 5 또는 7 권장
-        mid = int((num_cols-1)/2)
+        num_cols = 8    # 홀수로 변경: 5 또는 7 권장
         col_size_list = [1]*num_cols
-        col_size_list[mid] *= 0.2   # this is border
+
+        borders = []
+
+        for idx, size in enumerate(col_size_list):
+            if (idx+1) % 3 == 0:
+                col_size_list[idx] = 0.2
+                borders.append(idx)
+
         cols = st.columns(col_size_list)
-        left_cols = cols[:mid]
-        mid_cols = cols[mid]
-        right_cols = cols[mid+1:]
+
+        left_cols = cols[:borders[0]]
+        mid_cols = cols[borders[0]+1:borders[1]]
+        right_cols = cols[borders[1]+1:]
 
         for name, docs in [("asis", asis_docs), ("tobe", tobe_docs), ("tobe1", tobe1_docs)]:
             # select columns
@@ -252,15 +269,13 @@ def page():
                 this_cols = right_cols
 
             if len(docs) == 0:
-                col = this_cols[0 % mid]
+                col = this_cols[0]
                 col.subheader("🙈 검색결과없음!")
                 continue
 
             for rank, doc in enumerate(docs):
-                if name=='tobe1':
-                    col = this_cols
-                else:
-                    col = this_cols[rank % mid]
+                col = this_cols[rank % 2]
+                print(rank, rank%2)
 
                 if rank == constants.SHOW_K:
                     break
