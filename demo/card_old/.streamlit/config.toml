@@ -1,0 +1,7 @@
+[server]
+port = 30050
+runOnSave = true
+
+[runner]
+# https://github.com/streamlit/streamlit/issues/533
+# magicEnabled = false

@@ -1,0 +1,12 @@
+[server]
+port = 30060
+runOnSave = true
+
+[runner]
+# https://github.com/streamlit/streamlit/issues/533
+# magicEnabled = false
+
+#[theme]
+#base="light"
+#secondaryBackgroundColor="#69c5f3"
+
