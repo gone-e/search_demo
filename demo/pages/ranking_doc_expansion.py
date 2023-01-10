@@ -63,7 +63,7 @@ def page():
                 {
                     "multi_match": {
                         "fields": [
-                            "content_keywords"
+                            "content_keywords3"
                         ],
                         "operator": "and",
                         "query": input_query
@@ -167,9 +167,11 @@ def page():
         tobe1_request_body = ES.get_service_request_body(query=query, page_size=constants.TOP_K, timeout_secs=20)
 
         # new_matching_query
-        tobe_request_body['query']['boosting']['positive']['function_score']['query']['bool']['filter'][2]['bool']['must'][0]['multi_match']['fields'].append("content_keywords")
-        tobe_request_body['query']['boosting']['positive']['function_score']['query']['bool']['filter'][1]['multi_match'][
-            'fields'].append("content_keywords")
+        tobe_request_body['query']['boosting']['positive']['function_score']['query']['bool']['filter'][2]['bool'][
+            'must'][0]['multi_match']['fields'].append("content_keywords3")
+        tobe_request_body['query']['boosting']['positive']['function_score']['query']['bool']['filter'][1][
+            'multi_match'][
+            'fields'].append("content_keywords3")
        #tobe_request_body['query']['boosting']['negative_boost'] = 0.001
 
         tobe_request_body['query']['boosting']['negative']['bool']['should'].append(content_only_negative)
