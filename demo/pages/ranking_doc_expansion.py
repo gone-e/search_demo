@@ -96,6 +96,45 @@ def page():
         }
     }
 
+    content_only_negative2 = {
+        "bool": {
+            "must": [
+                {
+                    "multi_match": {
+                        "fields": [
+                            "content_keywords2"
+                        ],
+                        "operator": "and",
+                        "query": input_query
+                    }
+                }
+            ],
+            "must_not": [
+                {
+                    "multi_match": {
+                        "fields": [
+                            "brand_name",
+                            "brand_name.standard",
+                            "brand_name.no_syn",
+                            "name",
+                            "name.standard",
+                            "name.no_syn",
+                            "search_keywords",
+                            "search_keywords.standard",
+                            "reinforcement",
+                            "reinforcement.keyword",
+                            "search_admin_categories",
+                            "options"
+                        ],
+                        "operator": "and",
+                        "query": input_query,
+                        "type": "cross_fields"
+                    }
+                }
+            ]
+        }
+    }
+
     if input_query.strip():
         query = input_query
 
@@ -125,13 +164,22 @@ def page():
         asis_docs = get_docs(asis_res)
 
         tobe_request_body = ES.get_service_request_body(query=query, page_size=constants.TOP_K, timeout_secs=20)
+        tobe1_request_body = ES.get_service_request_body(query=query, page_size=constants.TOP_K, timeout_secs=20)
 
         # new_matching_query
         tobe_request_body['query']['boosting']['positive']['function_score']['query']['bool']['filter'][2]['bool']['must'][0]['multi_match']['fields'].append("content_keywords")
         tobe_request_body['query']['boosting']['positive']['function_score']['query']['bool']['filter'][1]['multi_match'][
             'fields'].append("content_keywords")
+       #tobe_request_body['query']['boosting']['negative_boost'] = 0.001
 
         tobe_request_body['query']['boosting']['negative']['bool']['should'].append(content_only_negative)
+
+        tobe1_request_body['query']['boosting']['positive']['function_score']['query']['bool']['filter'][2]['bool'][
+            'must'][0]['multi_match']['fields'].append("content_keywords")
+        tobe1_request_body['query']['boosting']['positive']['function_score']['query']['bool']['filter'][1][
+            'multi_match'][
+            'fields'].append("content_keywords2")
+        tobe1_request_body['query']['boosting']['negative']['bool']['should'].append(content_only_negative2)
         """
         if brand_query_res.get("brand_keyword"):
             new_rank_features = [
@@ -182,7 +230,7 @@ def page():
             # request_body=proximity.generate(query, top_k=constants.TOP_K),
             # request_body=normalize_bm25.generate(query, top_k=constants.TOP_K),
             # request_body=should_validate2.generate(query, top_k=constants.TOP_K),
-            request_body=tobe_request_body,
+            request_body=tobe1_request_body,
             explain=True,
             top_k=constants.TOP_K,
             with_elapsed=True,
@@ -228,7 +276,7 @@ def page():
                 score_list,
                 x="Rank",
                 y="Score",
-                title="TOBE Score Distribution"
+                title="v1(only card) Score Distribution"
             )
             debug_cols[1].pyplot(plot)
             # debug_cols[1].write(f'검색결과수: {tobe_res["result"]["hits"]["total"]["value"]}')
@@ -238,7 +286,7 @@ def page():
                 score_list, 
                 x="Rank", 
                 y="Score", 
-                title="TOBE Score Distribution"
+                title="v2(click, sim) Score Distribution"
             )
             debug_cols[2].pyplot(plot)
             # debug_cols[1].write(f'검색결과수: {tobe_res["result"]["hits"]["total"]["value"]}')
@@ -275,7 +323,6 @@ def page():
 
             for rank, doc in enumerate(docs):
                 col = this_cols[rank % 2]
-                print(rank, rank%2)
 
                 if rank == constants.SHOW_K:
                     break
