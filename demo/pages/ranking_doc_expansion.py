@@ -42,7 +42,7 @@ def add_similar_product(pid):
     url = f"http://internal-data-recommend-server-343939317.ap-northeast-2.elb.amazonaws.com/commerce/products/{pid}/related"
     related_products = requests.get(url).json()
     related_products_es = []
-    for r_pid in related_products['related_products'][:3]:
+    for r_pid in related_products['related_products'][:2]:
         doc = get_es_doc(r_pid)
         if doc['found'] == False:
             continue
@@ -235,7 +235,7 @@ def page():
         """
         #print(tobe_request_body)
 
-        tobe_res = ES.get_search_result(
+        tobe_res = ES_DEV.get_search_result(
             # request_body=multimatch_to_match.generate(query, top_k=constants.TOP_K),
             # request_body=add_matching_similarity.generate(query, top_k=constants.TOP_K),
             # request_body=proximity.generate(query, top_k=constants.TOP_K),
@@ -262,10 +262,16 @@ def page():
         tobe_docs = get_docs(tobe_res)
         tobe1_docs = get_docs(tobe1_res)
 
-        
-        if len(tobe_docs)<10:
-            for doc in tobe_docs[:3]:
-                sim_prods = add_similar_product(doc['_id'])
+
+
+        content_keyword_prod = []
+        for idx, d in enumerate(tobe_docs):
+            if d.get('content_keywords3'):
+                content_keyword_prod.append(d['id'])
+
+        if len(tobe_docs) < 50:
+            for doc in content_keyword_prod[:6]:
+                sim_prods = add_similar_product(str(doc))
                 tobe_docs = tobe_docs + sim_prods
 
         # 검색쿼리문
