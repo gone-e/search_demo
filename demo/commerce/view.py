@@ -52,6 +52,9 @@ def service_view(col, rank, doc, doc_url, use_badges=True, debug=True):
             col.write(f"[관리카테고리(검색용)] {doc['search_admin_categories']}")
             col.write(f"[카테고리키워드] {doc['category_keywords']}")
         has_content_keyword = True if doc.get("content_keywords") else False
+        if doc.get("related"):
+            col.write("[연관 상품] " + doc.get("related"))
+
         col.write("[컨텐츠키워드] " + str(has_content_keyword))
         col.write(f"[배송] { get_delivery_method(doc['delivery_method'], doc['delivery_score'])}")
         col.write(f"[스타일링샷] { doc['card_count']}")
@@ -64,8 +67,9 @@ def service_view(col, rank, doc, doc_url, use_badges=True, debug=True):
         if debug:
             # Explain 정보들
             with st.expander("Explain"):
-                explained = ESExplainParser.get_general_explain(doc["_explanation"], pretty=True)
-                st.text(explained)
+                if doc.get("_explanation"):
+                    explained = ESExplainParser.get_general_explain(doc["_explanation"], pretty=True)
+                    st.text(explained)
 
             # 중요한 검색필드값을 보여주는 탭
             with st.expander("Document"):

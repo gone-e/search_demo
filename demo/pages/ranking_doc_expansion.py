@@ -1,3 +1,4 @@
+import logging
 import sys
 sys.path.append(".")
 import copy
@@ -9,11 +10,11 @@ from ranking.commerce import *
 import demo.commerce.constants as constants
 import demo.commerce.view as commerce_view
 from demo.utils import (
-    get_docs, 
+    get_docs,
     get_id2rank,
     get_rank_changes,
-    get_analyze_result, 
-    get_service_doc_url, 
+    get_analyze_result,
+    get_service_doc_url,
     timediff
 )
 from demo.ohs_image import get_image_url
@@ -36,6 +37,26 @@ def load_random_query(data):
     for idx, row in df.iterrows():
         out[row["search_keyword"]] = dict(row)
     return out
+
+def add_similar_product(pid):
+    url = f"http://internal-data-recommend-server-343939317.ap-northeast-2.elb.amazonaws.com/commerce/products/{pid}/related"
+    related_products = requests.get(url).json()
+    related_products_es = []
+    for r_pid in related_products['related_products'][:3]:
+        doc = get_es_doc(r_pid)
+        if doc['found'] == False:
+            continue
+        doc['_source']['related'] = pid
+        doc['_source']['_score'] = 0
+        doc['_source']['_id'] = doc['_id']
+
+        related_products_es.append(doc['_source'])
+
+    return related_products_es
+
+def get_es_doc(pid):
+    url = f"""https://search-dev.dev.es.datahou.se:443/commerce_search_2023-01-11t06351673418938__gone/_doc/{pid}/"""
+    return requests.get(url).json()
 
 
 # NOTE: 가능한 서비스 페이지와 비슷한 느낌으로 노출하여 사용자와 비슷한 경험을 느낄 수 있도록 한다.
@@ -153,11 +174,11 @@ def page():
         ))
 
         asis_res = ES.get_search_result(
-            query, 
+            query,
             # request_body=asis.generate(query, top_k=constants.TOP_K),
             # request_body=multimatch.generate(query, top_k=constants.TOP_K),
             # request_body=should_validate.generate(query, top_k=constants.TOP_K),
-            explain=True, 
+            explain=True,
             top_k=constants.TOP_K,
             with_elapsed=True,
         )
@@ -221,7 +242,7 @@ def page():
             # request_body=normalize_bm25.generate(query, top_k=constants.TOP_K),
             # request_body=should_validate2.generate(query, top_k=constants.TOP_K),
             request_body=tobe_request_body,
-            explain=True, 
+            explain=True,
             top_k=constants.TOP_K,
             with_elapsed=True,
         )
@@ -241,6 +262,12 @@ def page():
         tobe_docs = get_docs(tobe_res)
         tobe1_docs = get_docs(tobe1_res)
 
+        
+        if len(tobe_docs)<10:
+            for doc in tobe_docs[:3]:
+                sim_prods = add_similar_product(doc['_id'])
+                tobe_docs = tobe_docs + sim_prods
+
         # 검색쿼리문
         col1, mid, col2 = st.columns([1, 1, 1])
         with col1:
@@ -255,9 +282,9 @@ def page():
             with st.expander("Request Body"):
                 st.json(tobe_res["requestBody"])
 
-        asis_id2rank = get_id2rank(asis_docs)
-        tobe_id2rank = get_id2rank(tobe_docs)
-        tobe1_id2rank = get_id2rank(tobe1_docs)
+        #asis_id2rank = get_id2rank(asis_docs)
+        #tobe_id2rank = get_id2rank(tobe_docs)
+        #tobe1_id2rank = get_id2rank(tobe1_docs)
 
         if option_debug == "Debug":
             debug_cols = st.columns(3)
@@ -265,15 +292,16 @@ def page():
             # extra_cols[1].info(f"elapsed: {tobe_elapsed}")
             score_list = [doc["_score"] for doc in asis_docs]
             plot = visualize.draw_distribution(
-                score_list, 
-                x="Rank", 
-                y="Score", 
+                score_list,
+                x="Rank",
+                y="Score",
                 title="ASIS Score Distribution"
             )
             debug_cols[0].pyplot(plot)
             # debug_cols[0].write(f'검색결과수: {asis_res["result"]["hits"]["total"]["value"]}')
 
             score_list = [doc["_score"] for doc in tobe1_docs]
+            #print(doc)
             plot = visualize.draw_distribution(
                 score_list,
                 x="Rank",
@@ -285,9 +313,9 @@ def page():
 
             score_list = [doc["_score"] for doc in tobe_docs]
             plot = visualize.draw_distribution(
-                score_list, 
-                x="Rank", 
-                y="Score", 
+                score_list,
+                x="Rank",
+                y="Score",
                 title="v2(click, sim) Score Distribution"
             )
             debug_cols[2].pyplot(plot)
@@ -334,7 +362,7 @@ def page():
 
                     col.markdown((
                         f'{rank+1}.'
-                        f'{get_rank_changes(asis_id2rank, tobe_id2rank, doc["_id"], constants.TOP_K)}'
+                        #f'{get_rank_changes(asis_id2rank, tobe_id2rank, doc["_id"], constants.TOP_K)}'
                         f' **`점수:{doc["_score"]}`**'
                         f' [{doc["_id"]}]({get_service_doc_url("스토어", doc["_id"])})'
                         f' [`doc`]({doc_url})'
@@ -342,9 +370,9 @@ def page():
                     ))
                     commerce_view.service_view(
                         col=col,
-                        rank=rank+1, 
-                        doc=doc, 
-                        doc_url=doc_url, 
-                        use_badges=False, 
+                        rank=rank+1,
+                        doc=doc,
+                        doc_url=doc_url,
+                        use_badges=False,
                         debug=True if option_debug == "Debug" else False
                     )

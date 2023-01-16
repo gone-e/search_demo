@@ -101,7 +101,7 @@ def page():
         ]
 
         tobe_request_body['query']['boosting']['positive']['function_score']['functions'] = tobe_request_body['query']['boosting']['positive']['function_score']['functions'] + new_rank_features
-        print(tobe_request_body)
+        #print(tobe_request_body)
 
         tobe_res = ES.get_search_result(
             # request_body=multimatch_to_match.generate(query, top_k=constants.TOP_K),
