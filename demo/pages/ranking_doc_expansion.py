@@ -84,7 +84,7 @@ def page():
                 {
                     "multi_match": {
                         "fields": [
-                            "content_keywords3"
+                            "content_keywords4"
                         ],
                         "operator": "and",
                         "query": input_query
@@ -123,7 +123,7 @@ def page():
                 {
                     "multi_match": {
                         "fields": [
-                            "content_keywords2"
+                            "content_keywords5"
                         ],
                         "operator": "and",
                         "query": input_query
@@ -189,20 +189,22 @@ def page():
 
         # new_matching_query
         tobe_request_body['query']['boosting']['positive']['function_score']['query']['bool']['filter'][2]['bool'][
-            'must'][0]['multi_match']['fields'].append("content_keywords3")
+            'must'][0]['multi_match']['fields'].append("content_keywords4")
         tobe_request_body['query']['boosting']['positive']['function_score']['query']['bool']['filter'][1][
             'multi_match'][
-            'fields'].append("content_keywords3")
-       #tobe_request_body['query']['boosting']['negative_boost'] = 0.001
+            'fields'].append("content_keywords4")
+
+        tobe_request_body['query']['boosting']['negative_boost'] = 0.001
 
         tobe_request_body['query']['boosting']['negative']['bool']['should'].append(content_only_negative)
 
         tobe1_request_body['query']['boosting']['positive']['function_score']['query']['bool']['filter'][2]['bool'][
-            'must'][0]['multi_match']['fields'].append("content_keywords")
+            'must'][0]['multi_match']['fields'].append("content_keywords5")
         tobe1_request_body['query']['boosting']['positive']['function_score']['query']['bool']['filter'][1][
             'multi_match'][
-            'fields'].append("content_keywords2")
+            'fields'].append("content_keywords5")
         tobe1_request_body['query']['boosting']['negative']['bool']['should'].append(content_only_negative2)
+        tobe1_request_body['query']['boosting']['negative_boost'] = 0.001
         """
         if brand_query_res.get("brand_keyword"):
             new_rank_features = [
@@ -288,9 +290,9 @@ def page():
             with st.expander("Request Body"):
                 st.json(tobe_res["requestBody"])
 
-        #asis_id2rank = get_id2rank(asis_docs)
-        #tobe_id2rank = get_id2rank(tobe_docs)
-        #tobe1_id2rank = get_id2rank(tobe1_docs)
+        asis_id2rank = get_id2rank(asis_docs)
+        tobe_id2rank = get_id2rank(tobe_docs)
+        tobe1_id2rank = get_id2rank(tobe1_docs)
 
         if option_debug == "Debug":
             debug_cols = st.columns(3)
@@ -366,9 +368,19 @@ def page():
                 with col:
                     doc_url, _ = ES.get_document(doc["_id"], only_return_url=True)
 
+                    rank_diff = 0
+                    if (rank % 2) == 3 or (rank % 2) == 4:
+                        rank_diff = get_rank_changes(asis_id2rank, tobe1_id2rank, doc["_id"], constants.TOP_K)
+                    elif (rank % 2) == 6 or (rank % 2) == 7:
+                        rank_diff = get_rank_changes(asis_id2rank, tobe_id2rank, doc["_id"], constants.TOP_K)
+                    else:
+                        rank_diff = get_rank_changes(asis_id2rank, tobe1_id2rank, doc["_id"], constants.TOP_K)
+
+
                     col.markdown((
                         f'{rank+1}.'
-                        #f'{get_rank_changes(asis_id2rank, tobe_id2rank, doc["_id"], constants.TOP_K)}'
+                        f'{rank_diff}'
+                        #f'{get_rank_changes(asis_id2rank, tobe1_id2rank, doc["_id"], constants.TOP_K)}'
                         f' **`점수:{doc["_score"]}`**'
                         f' [{doc["_id"]}]({get_service_doc_url("스토어", doc["_id"])})'
                         f' [`doc`]({doc_url})'

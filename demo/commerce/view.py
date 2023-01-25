@@ -51,7 +51,7 @@ def service_view(col, rank, doc, doc_url, use_badges=True, debug=True):
             col.write(f"[브랜드] {doc['brand_name']}")
             col.write(f"[관리카테고리(검색용)] {doc['search_admin_categories']}")
             col.write(f"[카테고리키워드] {doc['category_keywords']}")
-        has_content_keyword = True if doc.get("content_keywords") else False
+        has_content_keyword = True if doc.get("content_keywords4") or doc.get("content_keywords5") else False
         if doc.get("related"):
             col.write("[연관 상품] " + doc.get("related"))
 
