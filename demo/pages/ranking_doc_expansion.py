@@ -271,10 +271,12 @@ def page():
             if d.get('content_keywords3'):
                 content_keyword_prod.append(d['id'])
 
+        """
         if len(tobe_docs) < 50:
             for doc in content_keyword_prod[:6]:
                 sim_prods = add_similar_product(str(doc))
                 tobe_docs = tobe_docs + sim_prods
+        """
 
         # 검색쿼리문
         col1, mid, col2 = st.columns([1, 1, 1])
