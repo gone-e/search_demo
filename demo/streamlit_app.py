@@ -11,6 +11,7 @@ from demo.pages import (
     ranking_commerce,
     ranking_selling_feature,
     ranking_seller_grade,
+    ranking_option_property,
     ranking_doc_expansion,
     ranking_card,
     ranking_advice,
@@ -58,8 +59,9 @@ def app():
         page = st.radio(
             "페이지 선택",
             (
+                "속성매칭",
                 "스타일링샷&쿠폰",
-                "브랜드 질의",
+                "배송(conan)",
                 "문서 확장",
                 "랭킹 데이터",                # weak labeled ranking data result
                 "형태소 분석",                # elasticsearch analyzer result
@@ -78,13 +80,14 @@ def app():
         st.write("\n")
         st.info("💡 검색창에 텍스트가 입력된 경우에는 예제 질의가 동작하지 않습니다.")
 
-
     if page == "스타일링샷&쿠폰":
         ranking_seller_grade.page()
-    if page == "브랜드 질의":
+    elif page == "배송(conan)":
         ranking_brand_query.page()
     elif page == "랭킹 데이터":
         ranking_data.page(service)
+    elif page == "속성매칭":
+        ranking_option_property.page()
     elif page == "문서 확장":
         ranking_doc_expansion.page()
     elif page == "형태소 분석":
