@@ -88,36 +88,193 @@ def page():
         asis_docs = get_docs(asis_res)
 
         tobe_request_body = ES.get_service_request_body(query=query, page_size=constants.TOP_K, timeout_secs=20)
-
-
-        if brand_query_res.get("brand_keyword"):
-            new_rank_features = [
-                {
-                    "filter": {
-                        "bool": {
-                            "minimum_should_match": 1,
-                            "should": [
-                                {
-                                    "multi_match": {
-                                        "fields": [
-                                            "brand_name",
-                                            "processed_brand_name",
-                                            "brand_name.standard",
-                                            "brand_name.no_syn"
-                                        ],
-                                        "operator": "or",
-                                        "query": brand_query_res.get("brand_keyword"),
-                                        "type": "cross_fields"
-                                    }
+        functions = [
+            {
+                "field_value_factor": {
+                    "field": "selling_score"
+                },
+                "weight": 1
+            },
+            {
+                "field_value_factor": {
+                    "field": "wish_count_score"
+                },
+                "weight": 0.1
+            },
+            {
+                "field_value_factor": {
+                    "field": "has_coupon"
+                },
+                "weight": 0.00665383
+            },
+            {
+                "field_value_factor": {
+                    "field": "card_count_score"
+                },
+                "weight": 0.02077338
+            },
+            {
+                "field_value_factor": {
+                    "field": "seller_grade"
+                },
+                "weight": 0.006
+            },
+            {
+                "field_value_factor": {
+                    "field": "delivery_score"
+                },
+                "weight": 1.4
+            },
+            {
+                "filter": {
+                    "bool": {
+                        "minimum_should_match": 1,
+                        "should": [
+                            {
+                                "multi_match": {
+                                    "fields": [
+                                        "brand_name.dobby_korean",
+                                        "processed_brand_name",
+                                        "brand_name.standard",
+                                        "brand_name.dobby_no_syn"
+                                    ],
+                                    "operator": "or",
+                                    "query": "아이침대",
+                                    "type": "cross_fields"
                                 }
-                            ]
-                        }
-                    },
-                    "weight": 0.02068615
-                }
-            ]
+                            }
+                        ]
+                    }
+                },
+                "weight": 0.01068615
+            },
+            {
+                "filter": {
+                    "bool": {
+                        "minimum_should_match": 1,
+                        "should": [
+                            {
+                                "multi_match": {
+                                    "fields": [
+                                        "name.dobby_korean",
+                                        "name.standard",
+                                        "name.dobby_no_syn"
+                                    ],
+                                    "operator": "and",
+                                    "query": "아이침대",
+                                    "type": "cross_fields"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "weight": 0.01396124
+            },
+            {
+                "filter": {
+                    "bool": {
+                        "minimum_should_match": 1,
+                        "should": [
+                            {
+                                "multi_match": {
+                                    "fields": [
+                                        "search_admin_categories.dobby_korean"
+                                    ],
+                                    "operator": "and",
+                                    "query": "아이침대",
+                                    "type": "cross_fields"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "weight": 0.03322062
+            },
+            {
+                "filter": {
+                    "bool": {
+                        "minimum_should_match": 2,
+                        "should": [
+                            {
+                                "multi_match": {
+                                    "fields": [
+                                        "brand_name.dobby_korean",
+                                        "processed_brand_name",
+                                        "brand_name.standard",
+                                        "brand_name.dobby_no_syn"
+                                    ],
+                                    "operator": "or",
+                                    "query": "아이침대",
+                                    "type": "cross_fields"
+                                }
+                            },
+                            {
+                                "multi_match": {
+                                    "fields": [
+                                        "name.dobby_korean",
+                                        "name.standard",
+                                        "name.dobby_no_syn"
+                                    ],
+                                    "operator": "and",
+                                    "query": "아이침대",
+                                    "type": "cross_fields"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "weight": 0.00140854
+            },
+            {
+                "filter": {
+                    "bool": {
+                        "minimum_should_match": 1,
+                        "should": [
+                            {
+                                "term": {
+                                    "sold_out": True
+                                }
+                            }
+                        ]
+                    }
+                },
+                "weight": 0
+            },
+            {
+                "filter": {
+                    "bool": {
+                        "minimum_should_match": 1,
+                        "should": [
+                            {
+                                "match": {
+                                    "processed_brand_name": "아이침대"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "weight": 0.00617219
+            },
+            {
+                "filter": {
+                    "bool": {
+                        "minimum_should_match": 1,
+                        "should": [
+                            {
+                                "match": {
+                                    "category_keywords": "아이침대"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "weight": 0.03322062
+            }
+        ]
 
-            tobe_request_body['query']['boosting']['positive']['function_score']['functions'] = tobe_request_body['query']['boosting']['positive']['function_score']['functions'] + new_rank_features
+
+        tobe_request_body['query']['boosting']['positive']['function_score']['functions'] = functions
+
         print(tobe_request_body)
 
         tobe_res = ES.get_search_result(
