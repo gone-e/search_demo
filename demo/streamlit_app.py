@@ -18,6 +18,7 @@ from demo.pages import (
     ranking_project,
     ranking_question,
     ranking_data,
+    ranking_and_boosting,
     ranking_brand_query,
     iframe,
     doc_explain,
@@ -60,6 +61,7 @@ def app():
             "페이지 선택",
             (
                 "속성매칭",
+                "2term result merge",
                 "스타일링샷&쿠폰",
                 "배송(conan)",
                 "문서 확장",
@@ -88,6 +90,8 @@ def app():
         ranking_data.page(service)
     elif page == "속성매칭":
         ranking_option_property.page()
+    elif page =="2term result merge":
+        ranking_and_boosting.page()
     elif page == "문서 확장":
         ranking_doc_expansion.page()
     elif page == "형태소 분석":
