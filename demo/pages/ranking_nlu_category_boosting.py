@@ -41,6 +41,15 @@ def load_random_query(data):
     return out
 
 
+def load_random_query(data):
+    df = pd.read_csv(data, keep_default_na=False)
+    out = {}
+    for idx, row in df.iterrows():
+        out[row["search_keyword"]] = dict(row)
+    return out
+
+
+
 # NOTE: 가능한 서비스 페이지와 비슷한 느낌으로 노출하여 사용자와 비슷한 경험을 느낄 수 있도록 한다.
 def page():
     """ 내외부 공유 용도의 페이지 """
@@ -48,8 +57,9 @@ def page():
 
     option_debug = st.radio("Mode", ["Debug", "Normal"])
 
-    querydata = load_random_query(f"../dataset/{SERVICE}/search_keywords.qc10.1w.1K.{DATA_CREATED_AT}.csv")
+    #querydata = load_random_query(f"../dataset/{SERVICE}/search_keywords.qc10.1w.1K.{DATA_CREATED_AT}.csv")
 
+    querydata = {}
     query = st.selectbox(
         "Search",
         querydata.keys()
@@ -64,6 +74,7 @@ def page():
         query = input_query
 
     if query:
+
         st.subheader("Query Analyzer")
         res = get_analyze_result(ES, query, analyzers=["korean", "korean_syn"])
         st.write(res)
@@ -72,6 +83,7 @@ def page():
         if dat is None:
             dat = {}
 
+        st.subheader("[사진탭 기준] 모바일앱: 4-6개 결과 / 웹: 4-8개 결과")
         st.subheader((
             f"Result"
             f" [QC={dat.get('qc')}, CC={dat.get('cc')}, CTR={dat.get('ctr', -1):.1f}"
@@ -135,43 +147,94 @@ def page():
                     }
                 })
 
-            property_except_term_match =[
-                {
+        new_rank_features = [
+            {
+                "filter": {
                     "bool": {
-                        "should": [
-                            {
-                                "bool": {
-                                    "must": [
-                                        {
-                                            "multi_match": {
-                                                "fields": [
-                                                    "brand_name^3",
-                                                    "brand_name.standard^3",
-                                                    "brand_name.no_syn^3",
-                                                    "name^5",
-                                                    "name.standard^5",
-                                                    "name.no_syn^5",
-                                                    "search_keywords^2",
-                                                    "search_keywords.standard^2",
-                                                    "reinforcement^2",
-                                                    "reinforcement.keyword^2",
-                                                    "search_admin_categories^0.1",
-                                                    "admin_category_keywords^0.1",
-                                                    "display_category_keywords^0.1",
-                                                    "display_category_leaf_depth_names^0.1",
-                                                    "options^0.1"
-                                                ],
-                                                "operator": "and",
-                                                "query": query,
-                                                "type": "cross_fields"
-                                            }
+                        "minimum_should_match": 2,
+                        "should": new_feature
+                    }
+                },
+                "weight": 0.41140854
+            }
+        ]
+
+        tobe_request_body['query']['boosting']['positive']['function_score']['functions'] = \
+            tobe_request_body['query']['boosting']['positive']['function_score']['functions'] + new_rank_features
+
+        property_except_term_match =[
+            {
+                "bool": {
+                    "should": [
+                        {
+                            "bool": {
+                                "must": [
+                                    {
+                                        "multi_match": {
+                                            "fields": [
+                                                "brand_name^3",
+                                                "brand_name.standard^3",
+                                                "brand_name.no_syn^3",
+                                                "name^5",
+                                                "name.standard^5",
+                                                "name.no_syn^5",
+                                                "search_keywords^2",
+                                                "search_keywords.standard^2",
+                                                "reinforcement^2",
+                                                "reinforcement.keyword^2",
+                                                "search_admin_categories^0.1",
+                                                "admin_category_keywords^0.1",
+                                                "display_category_keywords^0.1",
+                                                "display_category_leaf_depth_names^0.1",
+                                                "options^0.1"
+                                            ],
+                                            "operator": "and",
+                                            "query": query,
+                                            "type": "cross_fields"
                                         }
-                                    ]
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "bool": {
+                                "must": {
+                                    "multi_match": {
+                                        "fields": [
+                                            "brand_name^3",
+                                            "brand_name.standard^3",
+                                            "brand_name.no_syn^3",
+                                            "name^5",
+                                            "name.standard^5",
+                                            "name.no_syn^5",
+                                            "search_keywords^2",
+                                            "search_keywords.standard^2",
+                                            "reinforcement^2",
+                                            "reinforcement.keyword^2",
+                                            "search_admin_categories^0.1",
+                                            "admin_category_keywords^0.1",
+                                            "display_category_keywords^0.1",
+                                            "display_category_leaf_depth_names^0.1"
+                                        ],
+                                        "operator": "and",
+                                        "query": query.replace(slot_data[query_property], ""),
+                                        "type": "cross_fields"
+                                    }
                                 }
-                            },
-                            {
-                                "bool": {
-                                    "must": {
+                            }
+                        }
+                    ]
+
+                }
+
+            },
+            {
+                "bool": {
+                    "should": [
+                        {
+                            "bool": {
+                                "must": [
+                                    {
                                         "multi_match": {
                                             "fields": [
                                                 "brand_name^3",
@@ -189,104 +252,52 @@ def page():
                                                 "display_category_keywords^0.1",
                                                 "display_category_leaf_depth_names^0.1"
                                             ],
-                                            "operator": "and",
+                                            "minimum_should_match": "1%",
+                                            "query": query,
+                                            "type": "cross_fields"
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "bool": {
+                                "must": [
+                                    {
+                                        "multi_match": {
+                                            "fields": [
+                                                "brand_name^3",
+                                                "brand_name.standard^3",
+                                                "brand_name.no_syn^3",
+                                                "name^5",
+                                                "name.standard^5",
+                                                "name.no_syn^5",
+                                                "search_keywords^2",
+                                                "search_keywords.standard^2",
+                                                "reinforcement^2",
+                                                "reinforcement.keyword^2",
+                                                "search_admin_categories^0.1",
+                                                "admin_category_keywords^0.1",
+                                                "display_category_keywords^0.1",
+                                                "display_category_leaf_depth_names^0.1"
+                                            ],
+                                            "minimum_should_match": "1%",
                                             "query": query.replace(slot_data[query_property], ""),
                                             "type": "cross_fields"
                                         }
                                     }
-                                }
+                                ]
                             }
-                        ]
-
-                    }
-
-                },
-                {
-                    "bool": {
-                        "should": [
-                            {
-                                "bool": {
-                                    "must": [
-                                        {
-                                            "multi_match": {
-                                                "fields": [
-                                                    "brand_name^3",
-                                                    "brand_name.standard^3",
-                                                    "brand_name.no_syn^3",
-                                                    "name^5",
-                                                    "name.standard^5",
-                                                    "name.no_syn^5",
-                                                    "search_keywords^2",
-                                                    "search_keywords.standard^2",
-                                                    "reinforcement^2",
-                                                    "reinforcement.keyword^2",
-                                                    "search_admin_categories^0.1",
-                                                    "admin_category_keywords^0.1",
-                                                    "display_category_keywords^0.1",
-                                                    "display_category_leaf_depth_names^0.1"
-                                                ],
-                                                "minimum_should_match": "1%",
-                                                "query": query,
-                                                "type": "cross_fields"
-                                            }
-                                        }
-                                    ]
-                                }
-                            },
-                            {
-                                "bool": {
-                                    "must": [
-                                        {
-                                            "multi_match": {
-                                                "fields": [
-                                                    "brand_name^3",
-                                                    "brand_name.standard^3",
-                                                    "brand_name.no_syn^3",
-                                                    "name^5",
-                                                    "name.standard^5",
-                                                    "name.no_syn^5",
-                                                    "search_keywords^2",
-                                                    "search_keywords.standard^2",
-                                                    "reinforcement^2",
-                                                    "reinforcement.keyword^2",
-                                                    "search_admin_categories^0.1",
-                                                    "admin_category_keywords^0.1",
-                                                    "display_category_keywords^0.1",
-                                                    "display_category_leaf_depth_names^0.1"
-                                                ],
-                                                "minimum_should_match": "1%",
-                                                "query": query.replace(slot_data[query_property], ""),
-                                                "type": "cross_fields"
-                                            }
-                                        }
-                                    ]
-                                }
-                            }
-                        ]
-                    }
-                }
-            ]
-
-            filters = tobe_request_body['query']['boosting']['positive']['function_score']['query']['bool']['filter'][:1]
-            filters = filters + property_except_term_match
-
-
-            new_rank_features = [
-                {
-                    "filter": {
-                        "bool": {
-                            "minimum_should_match": 2,
-                            "should": new_feature
                         }
-                    },
-                    "weight": 0.81140854
+                    ]
                 }
-            ]
+            }
+        ]
 
-            tobe_request_body['query']['boosting']['positive']['function_score']['functions'] = \
-                tobe_request_body['query']['boosting']['positive']['function_score']['functions'] + new_rank_features
-
-
+        filters = tobe_request_body['query']['boosting']['positive']['function_score']['query']['bool']['filter'][:1]
+        filters = filters + property_except_term_match
+        print(filters)
+        if query_property:
             tobe_request_body['query']['boosting']['positive']['function_score']['query']['bool']['filter'] = filters
 
         tobe_res = ES.get_search_result(
@@ -302,7 +313,6 @@ def page():
         )
         tobe_docs = get_docs(tobe_res)
 
-        st.subheader(f"[커머스 기준] asis :  {asis_res['result']['hits']['total']['value']}/ tobe: {tobe_res['result']['hits']['total']['value']}")
         # 검색쿼리문
         col1, _, col2 = st.columns([1, 0.2, 1])
         with col1:
