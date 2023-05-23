@@ -72,7 +72,6 @@ def page():
         if dat is None:
             dat = {}
 
-        st.subheader("[사진탭 기준] 모바일앱: 4-6개 결과 / 웹: 4-8개 결과")
         st.subheader((
             f"Result"
             f" [QC={dat.get('qc')}, CC={dat.get('cc')}, CTR={dat.get('ctr', -1):.1f}"
@@ -280,7 +279,7 @@ def page():
                             "should": new_feature
                         }
                     },
-                    "weight": 0.41140854
+                    "weight": 0.81140854
                 }
             ]
 
@@ -303,6 +302,7 @@ def page():
         )
         tobe_docs = get_docs(tobe_res)
 
+        st.subheader(f"[커머스 기준] asis :  {asis_res['result']['hits']['total']['value']}/ tobe: {tobe_res['result']['hits']['total']['value']}")
         # 검색쿼리문
         col1, _, col2 = st.columns([1, 0.2, 1])
         with col1:
