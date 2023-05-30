@@ -11,6 +11,7 @@ from demo.pages import (
     ranking_commerce,
     ranking_selling_feature,
     ranking_seller_grade,
+    ranking_nlu_category_boosting,
     ranking_option_property,
     ranking_doc_expansion,
     ranking_card,
@@ -61,7 +62,8 @@ def app():
             "페이지 선택",
             (
                 "속성매칭",
-                "2term result merge",
+                "공간/가구 부분매칭",
+                "질의카테고리",
                 "스타일링샷&쿠폰",
                 "배송(conan)",
                 "문서 확장",
@@ -71,7 +73,6 @@ def app():
                 "개별문서 랭킹디버깅(Explain)",
                 "[Feat] BM25 정규화",
                 "iframe",
-                # "Good & Bad Cases",
             )
         )
 
@@ -90,8 +91,10 @@ def app():
         ranking_data.page(service)
     elif page == "속성매칭":
         ranking_option_property.page()
-    elif page =="2term result merge":
+    elif page == "공간/가구 부분매칭":
         ranking_and_boosting.page()
+    elif page == "질의카테고리":
+        ranking_nlu_category_boosting.page()
     elif page == "문서 확장":
         ranking_doc_expansion.page()
     elif page == "형태소 분석":
