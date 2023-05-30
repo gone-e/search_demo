@@ -38,6 +38,7 @@ def load_random_query(data):
         out[row["search_keyword"]] = dict(row)
     return out
 
+
 def add_similar_product(pid):
     url = f"http://internal-data-recommend-server-343939317.ap-northeast-2.elb.amazonaws.com/commerce/products/{pid}/related"
     related_products = requests.get(url).json()
@@ -53,6 +54,7 @@ def add_similar_product(pid):
         related_products_es.append(doc['_source'])
 
     return related_products_es
+
 
 def get_es_doc(pid):
     url = f"""https://search-dev.dev.es.datahou.se:443/commerce_search_2023-01-11t06351673418938__gone/_doc/{pid}/"""

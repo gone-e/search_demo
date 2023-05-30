@@ -50,8 +50,6 @@ def load_random_query(data):
     return out
 
 
-
-# NOTE: 가능한 서비스 페이지와 비슷한 느낌으로 노출하여 사용자와 비슷한 경험을 느낄 수 있도록 한다.
 def page():
     """ 내외부 공유 용도의 페이지 """
     st.title("🧽 스토어 검색(Commerce Search) 데모")
@@ -105,6 +103,7 @@ def page():
         nlu_res = get_nlu(query)
 
         query_category = None
+        print(nlu_res)
         if nlu_res.get('category'):
             query_category = nlu_res.get('category')
 
@@ -133,8 +132,10 @@ def page():
             }
         ]
 
-        tobe_request_body['query']['boosting']['positive']['function_score']['functions'] = \
-            tobe_request_body['query']['boosting']['positive']['function_score']['functions'] + new_rank_features
+        print(new_rank_features)
+        if query_category:
+            tobe_request_body['query']['boosting']['positive']['function_score']['functions'] = \
+                tobe_request_body['query']['boosting']['positive']['function_score']['functions'] + new_rank_features
 
         tobe_res = ES.get_search_result(
             # request_body=multimatch_to_match.generate(query, top_k=constants.TOP_K),
@@ -158,6 +159,8 @@ def page():
             with st.expander("Request Body"):
                 st.json(tobe_res["requestBody"])
 
+        len(asis_docs)
+        len(tobe_docs)
         asis_id2rank = get_id2rank(asis_docs)
         tobe_id2rank = get_id2rank(tobe_docs)
 
@@ -230,7 +233,3 @@ def page():
                         use_badges=False, 
                         debug=True if option_debug == "Debug" else False
                     )
-
-
-
-
