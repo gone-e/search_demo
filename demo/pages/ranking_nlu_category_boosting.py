@@ -63,7 +63,7 @@ def page():
     querydata = {}
     query = st.selectbox(
         "Search",
-        querydata.keys()
+        ["lgtv", "동서가구침대"]
     )
 
     input_query = st.text_input(
