@@ -83,18 +83,24 @@ def get_analyze_result(es_wrapper, query, analyzers=None, detail=False, with_jso
     def check_query_term_type(analyzed_result):
         result = []
         brand_keyword = None
+        query_category = None
+        if analyzed_result.get("category"):
+            query_category = analyzed_result.get("category")
+
         if len(analyzed_result['result_list']) > 0:
             for token in analyzed_result['result_list'][0]['curr_list']:
                 if token['slot_type'] == "브랜드명":
                     brand_keyword = token['slot_text']
                 result.append(token['slot_text'] + "/" + token['slot_type'])
-            return " ".join(result), brand_keyword
-        return False, brand_keyword
+            return " ".join(result), brand_keyword, query_category
+        return False, brand_keyword, query_category
 
-    query_analyzed_result = requests.get(f"https://search-nlu.datahou.se/analysis/?query={query}").json()
-    query_term_type, brand_keyword = check_query_term_type(query_analyzed_result)
-    parsed_result['query_term_analyze'] =query_term_type
+    query_analyzed_result = requests.get(f"http://10.0.23.33:8000/analysis/?query={query}").json()
+    query_term_type, brand_keyword, query_category = check_query_term_type(query_analyzed_result)
+    parsed_result['query_term_analyze'] = query_term_type
     parsed_result['brand_keyword'] = brand_keyword
+    parsed_result['query_category'] = query_category
+    parsed_result['nlu'] = f"https://search-nlu.datahou.se/analysis/?query={query}"
     return parsed_result
 
 def get_service_doc_url(service, id):
