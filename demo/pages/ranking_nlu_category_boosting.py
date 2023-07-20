@@ -29,7 +29,7 @@ ES = SERVICE_TO_ES[SERVICE]
 
 
 def get_nlu(search_keyword):
-    url = f"http://localhost:8000/analysis?query={search_keyword}"
+    url = f"http://localhost:8000/analysis/collections/commerce?query={search_keyword}&v=v2"
 
     return requests.get(url).json()
 
@@ -103,7 +103,6 @@ def page():
         nlu_res = get_nlu(query)
 
         query_category = None
-        print(nlu_res)
         if nlu_res.get('category'):
             query_category = nlu_res.get('category')
 
@@ -121,18 +120,16 @@ def page():
                                         "search_admin_categories"
                                     ],
                                     "operator": "and",
-                                    "query": query_category,
-                                    "type": "cross_fields"
+                                    "query": query_category
                                 }
                             }
                         ]
                     }
                 },
-                "weight": 0.03322062
+                "weight": 0.1022062
             }
         ]
 
-        print(new_rank_features)
         if query_category:
             tobe_request_body['query']['boosting']['positive']['function_score']['functions'] = \
                 tobe_request_body['query']['boosting']['positive']['function_score']['functions'] + new_rank_features
