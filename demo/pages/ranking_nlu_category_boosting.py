@@ -102,9 +102,9 @@ def page():
 
         nlu_res = get_nlu(query)
 
-        query_category = None
+        query_category_id = None
         if nlu_res.get('category'):
-            query_category = nlu_res.get('category')
+            query_category_id = nlu_res.get('category')
 
         tobe_request_body = ES.get_service_request_body(query=query, page_size=constants.TOP_K, timeout_secs=20)
 
@@ -115,12 +115,13 @@ def page():
                         "minimum_should_match": 1,
                         "should": [
                             {
-                                "multi_match": {
-                                    "fields": [
-                                        "search_admin_categories"
-                                    ],
-                                    "operator": "and",
-                                    "query": query_category
+                                "term": {
+                                    "root_admin_category_id": query_category_id
+                                }
+                            },
+                            {
+                                "term": {
+                                    "upper_admin_category_ids": query_category_id
                                 }
                             }
                         ]
@@ -130,16 +131,11 @@ def page():
             }
         ]
 
-        if query_category:
+        if query_category_id:
             tobe_request_body['query']['boosting']['positive']['function_score']['functions'] = \
                 tobe_request_body['query']['boosting']['positive']['function_score']['functions'] + new_rank_features
 
         tobe_res = ES.get_search_result(
-            # request_body=multimatch_to_match.generate(query, top_k=constants.TOP_K),
-            # request_body=add_matching_similarity.generate(query, top_k=constants.TOP_K),
-            # request_body=proximity.generate(query, top_k=constants.TOP_K),
-            # request_body=normalize_bm25.generate(query, top_k=constants.TOP_K),
-            # request_body=should_validate2.generate(query, top_k=constants.TOP_K),
             request_body=tobe_request_body,
             explain=True, 
             top_k=constants.TOP_K,
